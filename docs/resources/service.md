@@ -10,7 +10,189 @@ description: |-
 
 
 
+## Example Usage
 
+```terraform
+resource "tsuru_service" "authorization_service" {
+  name     = "authorization-service"
+  endpoint = "https://authorization-service.example.com"
+  team     = "platform"
+
+  manifest {
+    enabled        = true
+    strict_actions = true
+    legacy_compat  = false
+
+    operations {
+      method = "GET"
+      path   = "/rules"
+      action = "rules.list"
+    }
+
+    operations {
+      method = "POST"
+      path   = "/rules/{ruleId}/sync"
+      action = "rules.sync"
+    }
+  }
+}
+```
+
+## Writing manifest operation paths
+
+Tsuru validates and matches manifest operations with Go's
+[`http.ServeMux`](https://pkg.go.dev/net/http#ServeMux) pattern syntax. Each
+operation is registered as `METHOD /path`.
+
+- Write paths relative to the service API, without the
+  `/resources/<service-instance>` proxy prefix. For example, use
+  `/databases/{databaseId}`, not
+  `/resources/my-instance/databases/{databaseId}`.
+- A leading slash is recommended. Tsuru trims surrounding whitespace and adds
+  the slash when it is missing.
+- `{name}` matches exactly one path segment. The name must be a valid Go
+  identifier and the wildcard must occupy the entire segment:
+  `/databases/{databaseId}` is valid, while
+  `/databases/database-{databaseId}` is not.
+- `{name...}` matches all remaining segments and may appear only at the end,
+  such as `/files/{path...}`.
+- `{$}` matches only the end of the path. For example, `/files/{$}` matches
+  `/files/` but not paths below it.
+- Literal segments and wildcard names are case-sensitive. Query parameters are
+  not part of path matching.
+- `GET` also matches `HEAD`. An explicit `HEAD` operation may be used when it
+  needs a different action.
+- Use one of `DELETE`, `GET`, `HEAD`, `OPTIONS`, `PATCH`, `POST`, or `PUT`.
+  This provider accepts lowercase methods and stores them in uppercase.
+
+For example:
+
+```terraform
+operations {
+  method = "GET"
+  path   = "/databases/{databaseId}"
+  action = "database.read"
+}
+
+operations {
+  method = "POST"
+  path   = "/databases/{databaseId}/users"
+  action = "database.users.create"
+}
+
+operations {
+  method = "GET"
+  path   = "/files/{path...}"
+  action = "files.read"
+}
+```
+
+## Avoiding operation collisions
+
+Tsuru rejects a manifest when two patterns match some of the same requests and
+neither pattern is more specific than the other. It also rejects duplicate
+actions and duplicate method/path pairs.
+
+| Operations | Result | Reason |
+|---|---|---|
+| `GET /rules/{ruleId}` and `GET /rules/{name}` | Collision | Wildcard names do not change what the pattern matches. |
+| `GET /rules/{ruleId}` and `GET /rules/sync` | Valid | The literal `sync` route is more specific. |
+| `GET /rules/{ruleId}` and `POST /rules/{name}` | Valid | The HTTP methods are disjoint. |
+| `GET /{resource}/latest` and `GET /rules/{ruleId}` | Collision | Both match `/rules/latest`, but neither is more specific overall. |
+| `GET /files/{path...}` and `GET /files/static/{name}` | Valid | The second route is a strict subset of the catch-all route. |
+
+`terraform validate` checks individual fields, but it cannot detect
+cross-operation `ServeMux` collisions. `terraform plan` also does not submit a
+new manifest to tsuru. The tsuru server remains the authoritative validator
+during `terraform apply`: an invalid route set returns HTTP 400 before the new
+manifest is persisted, leaving the previously stored manifest unchanged. A
+change that would orphan active dynamic permission grants is rejected
+separately with HTTP 409.
+
+To check an existing or proposed manifest locally, first save it as JSON. The
+currently stored manifest can be exported with:
+
+```shell
+tsuru service-manifest-get my-service > manifest.json
+```
+
+Save the following as `validate-manifest.go`:
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"strings"
+)
+
+type manifest struct {
+	Operations []struct {
+		Method string `json:"method"`
+		Path   string `json:"path"`
+		Action string `json:"action"`
+	} `json:"operations"`
+}
+
+func main() {
+	if len(os.Args) != 2 {
+		fmt.Fprintln(os.Stderr, "usage: go run validate-manifest.go manifest.json")
+		os.Exit(2)
+	}
+
+	data, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	var value manifest
+	if err := json.Unmarshal(data, &value); err != nil {
+		panic(err)
+	}
+
+	mux := http.NewServeMux()
+	actions := map[string]bool{}
+	for _, operation := range value.Operations {
+		if actions[operation.Action] {
+			fmt.Fprintf(os.Stderr, "duplicate action %q\n", operation.Action)
+			os.Exit(1)
+		}
+		actions[operation.Action] = true
+
+		method := strings.ToUpper(strings.TrimSpace(operation.Method))
+		path := strings.TrimSpace(operation.Path)
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
+		pattern := method + " " + path
+		if err := register(mux, pattern); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid or conflicting operation %q: %v\n", pattern, err)
+			os.Exit(1)
+		}
+	}
+
+	fmt.Printf("OK: %d operations do not collide\n", len(value.Operations))
+}
+
+func register(mux *http.ServeMux, pattern string) (err error) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = fmt.Errorf("%v", recovered)
+		}
+	}()
+	mux.HandleFunc(pattern, func(http.ResponseWriter, *http.Request) {})
+	return nil
+}
+```
+
+Run the checker with Go 1.22 or newer, using the same Go version as the tsuru
+server when possible:
+
+```shell
+GODEBUG=httpmuxgo121=0 go run validate-manifest.go manifest.json
+```
 
 <!-- schema generated by tfplugindocs -->
 ## Schema
@@ -25,6 +207,7 @@ description: |-
 - `encoding` (String) Encoding format used to communicate with the service API backend. Valid options are "form" (default) and "json".
 - `endpoint` (String) Single service endpoint URL. The server stores it as endpoints["production"]. Mutually exclusive with "endpoints".
 - `endpoints` (Map of String) Map of endpoint name to URL, e.g. { production = "https://prod..." }. Mutually exclusive with "endpoint".
+- `manifest` (Block List, Max: 1) Fine-grained authorization manifest. When omitted, an existing manifest is left unmanaged. Requires tsuru API 1.31 or newer. (see [below for nested schema](#nestedblock--manifest))
 - `multi_cluster` (Boolean) Whether the service supports multi-cluster
 - `password` (String, Sensitive) Password for service authentication
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
@@ -33,6 +216,30 @@ description: |-
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+
+<a id="nestedblock--manifest"></a>
+### Nested Schema for `manifest`
+
+Required:
+
+- `enabled` (Boolean) Whether fine-grained manifest authorization is enabled
+
+Optional:
+
+- `legacy_compat` (Boolean) Whether the legacy service instance update proxy permission remains accepted
+- `operations` (Block Set) Service API operations and their fine-grained authorization actions (see [below for nested schema](#nestedblock--manifest--operations))
+- `strict_actions` (Boolean) Whether requests that do not match an operation are denied
+
+<a id="nestedblock--manifest--operations"></a>
+### Nested Schema for `manifest.operations`
+
+Required:
+
+- `action` (String) Dotted action name used to create the dynamic permission
+- `method` (String) HTTP method matched by this operation
+- `path` (String) Service API path pattern matched by this operation
+
+
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`
