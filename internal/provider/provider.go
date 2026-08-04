@@ -78,6 +78,7 @@ func Provider() *schema.Provider {
 			"tsuru_job_deploy": resourceTsuruJobDeploy(),
 
 			"tsuru_router":          resourceTsuruRouter(),
+			"tsuru_role":            resourceTsuruRole(),
 			"tsuru_plan":            resourceTsuruPlan(),
 			"tsuru_webhook":         resourceTsuruWebhook(),
 			"tsuru_pool_constraint": resourceTsuruPoolConstraint(),
@@ -101,6 +102,8 @@ type tsuruProvider struct {
 	Host               string
 	Token              string
 	TsuruClient        *tsuru.APIClient
+	HTTPClient         *http.Client
+	HTTPHeaders        http.Header
 	FullManagementEnvs bool
 }
 
@@ -158,12 +161,20 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, terraformVer
 		return nil, diag.FromErr(err)
 	}
 
+	httpHeaders := make(http.Header, len(cfg.DefaultHeader)+1)
+	for key, value := range cfg.DefaultHeader {
+		httpHeaders.Set(key, value)
+	}
+	httpHeaders.Set("User-Agent", cfg.UserAgent)
+
 	fullManagementEnvs := d.Get("full_management_of_user_environment_variables").(bool)
 
 	return &tsuruProvider{
 		Host:               host,
 		Token:              token,
 		TsuruClient:        client,
+		HTTPClient:         cfg.HTTPClient,
+		HTTPHeaders:        httpHeaders,
 		FullManagementEnvs: fullManagementEnvs,
 	}, nil
 }
