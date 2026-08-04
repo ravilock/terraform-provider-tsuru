@@ -65,5 +65,5 @@ test:
 	TF_ACC=1 TF_ACC_TERRAFORM_VERSION=1.4.4 go test ./... -v
 
 generate-docs:
-	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.13.0
+	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0
 	go generate
