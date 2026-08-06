@@ -113,6 +113,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, terraformVer
 	cfg := &tsuru.Configuration{
 		DefaultHeader: map[string]string{},
 		UserAgent:     userAgent,
+		HTTPClient:    http.DefaultClient,
 	}
 
 	if d.Get("skip_cert_verification").(bool) {
