@@ -30,7 +30,7 @@ resource "tsuru_role" "deployer" {
 
 ### Required
 
-- `context` (String) Context type associated with the role. Valid values are: `global`, `app`, `job`, `team`, `user`, `pool`, `service`, `service-instance`, `volume`, and `router`.
+- `context` (String) Context type associated with the role. Valid values are: global, app, job, team, user, pool, service, service-instance, volume, and router
 - `name` (String) Unique role name
 
 ### Optional
@@ -41,11 +41,3 @@ resource "tsuru_role" "deployer" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-
-## Import
-
-Import a role using its name:
-
-```shell
-terraform import tsuru_role.deployer "deployer"
-```
