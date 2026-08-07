@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"k8s.io/utils/ptr"
 
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
@@ -435,17 +434,17 @@ func scaleDownFromResourceData(meta interface{}) tsuru_client.AutoScaleSpecBehav
 		sd := iFace.(map[string]interface{})
 		if v, ok := sd["percentage"]; ok {
 			if val, ok := v.(int); ok {
-				scaleDown.PercentagePolicyValue = ptr.To(int32(val))
+				scaleDown.PercentagePolicyValue = new(int32(val))
 			}
 		}
 		if v, ok := sd["units"]; ok {
 			if val, ok := v.(int); ok {
-				scaleDown.UnitsPolicyValue = ptr.To(int32(val))
+				scaleDown.UnitsPolicyValue = new(int32(val))
 			}
 		}
 		if v, ok := sd["stabilization_window"]; ok {
 			if val, ok := v.(int); ok {
-				scaleDown.StabilizationWindow = ptr.To(int32(val))
+				scaleDown.StabilizationWindow = new(int32(val))
 			}
 		}
 	}

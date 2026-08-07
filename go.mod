@@ -11,7 +11,6 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tsuru/go-tsuruclient v0.6.0
 	k8s.io/apimachinery v0.27.4
-	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 )
 
 require (
@@ -78,4 +77,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
+	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect
 )
