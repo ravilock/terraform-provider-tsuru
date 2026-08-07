@@ -33,8 +33,12 @@ func TestAccResourceTsuruAppDeploy(t *testing.T) {
 			"message":           {"deploy via terraform"},
 			"new-version":       {"false"},
 			"origin":            {"image"},
-			"override-versions": {"false"}},
+			"override-versions": {"false"},
+		},
 			formParams)
+
+		authHeader := c.Request().Header.Get("Authorization")
+		assert.Contains(t, authHeader, "testing-token")
 
 		return c.String(http.StatusOK, "OK")
 	})
@@ -58,6 +62,7 @@ func TestAccResourceTsuruAppDeploy(t *testing.T) {
 	}
 	server := httptest.NewServer(fakeServer)
 	os.Setenv("TSURU_TARGET", server.URL)
+	os.Setenv("TSURU_TOKEN", "testing-token")
 
 	resourceName := "tsuru_app_deploy.deploy"
 	resource.Test(t, resource.TestCase{
@@ -94,14 +99,17 @@ func TestAccResourceTsuruAppDeployFailed(t *testing.T) {
 			"message":           {"deploy via terraform"},
 			"new-version":       {"false"},
 			"origin":            {"image"},
-			"override-versions": {"false"}},
+			"override-versions": {"false"},
+		},
 			formParams)
+
+		authHeader := c.Request().Header.Get("Authorization")
+		assert.Contains(t, authHeader, "testing-token")
 
 		return c.String(http.StatusOK, "OK")
 	})
 
 	fakeServer.GET("/1.1/events/:eventID", func(c echo.Context) error {
-
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"Running": false,
 			"Error":   "deploy failed",
@@ -114,6 +122,7 @@ func TestAccResourceTsuruAppDeployFailed(t *testing.T) {
 	}
 	server := httptest.NewServer(fakeServer)
 	os.Setenv("TSURU_TARGET", server.URL)
+	os.Setenv("TSURU_TOKEN", "testing-token")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
