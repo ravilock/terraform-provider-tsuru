@@ -6,12 +6,13 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -61,17 +62,15 @@ func resourceTsuruServiceInstanceGrantCreate(ctx context.Context, d *schema.Reso
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		_, err := provider.TsuruClient.ServiceApi.ServiceInstanceGrant(ctx, service, instance, team)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
 			}
-			return resource.NonRetryableError(errors.Errorf("unable to grant permission to team %s on %s %s: %v", team, service, instance, err))
+			return resource.NonRetryableError(fmt.Errorf("unable to grant permission to team %s on %s %s: %w", team, service, instance, err))
 		}
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}

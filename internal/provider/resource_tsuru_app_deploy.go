@@ -22,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
-	tsuruClientConfig "github.com/tsuru/tsuru-client/tsuru/config"
 )
 
 func resourceTsuruApplicationDeploy() *schema.Resource {
@@ -114,14 +113,13 @@ func resourceTsuruApplicationDeployDo(ctx context.Context, d *schema.ResourceDat
 
 	token := provider.Token
 	if token == "" {
-		token = deployToken()
+		return diag.Errorf("token not available")
 	}
 	req.Header.Set("Authorization", token)
 
 	wait := d.Get("wait").(bool)
 
 	resp, err := http.DefaultClient.Do(req)
-
 	if err != nil {
 		log.Println("[DEBUG] failed to request deploy", err)
 		return diag.FromErr(err)
@@ -162,7 +160,6 @@ func waitForEventComplete(ctx context.Context, provider *tsuruProvider, eventID 
 
 	for {
 		e, _, err := provider.TsuruClient.EventApi.EventInfo(ctx, eventID)
-
 		if err != nil {
 			return err
 		}
@@ -183,7 +180,6 @@ func waitForEventComplete(ctx context.Context, provider *tsuruProvider, eventID 
 
 		return nil
 	}
-
 }
 
 func resourceTsuruApplicationDeployRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -192,7 +188,6 @@ func resourceTsuruApplicationDeployRead(ctx context.Context, d *schema.ResourceD
 	id := d.Id()
 
 	e, _, err := provider.TsuruClient.EventApi.EventInfo(ctx, id)
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -244,12 +239,4 @@ func decodeRawBSONMap(input tsuru.EventStartCustomData) (map[string]interface{},
 	}
 
 	return data, nil
-}
-
-func deployToken() string {
-	if token, tokenErr := tsuruClientConfig.DefaultTokenProvider.Token(); tokenErr == nil && token != "" {
-		return "bearer " + token
-	}
-
-	return ""
 }

@@ -6,12 +6,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
@@ -93,8 +93,7 @@ func resourceTsuruVolumeBindCreate(ctx context.Context, d *schema.ResourceData, 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		resp, err := provider.TsuruClient.VolumeApi.VolumeBind(ctx, name, bindData)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -108,7 +107,6 @@ func resourceTsuruVolumeBindCreate(ctx context.Context, d *schema.ResourceData, 
 		d.SetId(createID([]string{bindData.App, name, bindData.Mountpoint}))
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -177,8 +175,7 @@ func resourceTsuruVolumeBindDelete(ctx context.Context, d *schema.ResourceData, 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		_, err := provider.TsuruClient.VolumeApi.VolumeUnbind(ctx, name, bindData)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -187,7 +184,6 @@ func resourceTsuruVolumeBindDelete(ctx context.Context, d *schema.ResourceData, 
 		}
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}

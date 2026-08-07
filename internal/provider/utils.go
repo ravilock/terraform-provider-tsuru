@@ -6,13 +6,14 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -49,8 +50,7 @@ func tsuruRetry(ctx context.Context, d *schema.ResourceData, f func() error) err
 	return resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		err := f()
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -68,7 +68,7 @@ func createID(input []string) string {
 func IDtoParts(input string, minLength int) ([]string, error) {
 	output := strings.Split(input, ID_SEPARATOR)
 	if len(output) < minLength {
-		return nil, errors.Errorf("Mismatched length %d on input ID %s expected %d", len(output), input, minLength)
+		return nil, fmt.Errorf("mismatched length %d on input ID %s expected %d", len(output), input, minLength)
 	}
 	return output, nil
 }
@@ -92,8 +92,8 @@ func markRemovedMetadataItemAsDeleted(oldMetadataItems []tsuru_client.MetadataIt
 func markRemovedProcessAsDefaultPlan(oldProcesses []tsuru_client.AppProcess, newProcesses []tsuru_client.AppProcess) []tsuru_client.AppProcess {
 	onlyInOldList, onlyInNewList, inBoth := checkProcessesListsChanges(oldProcesses, newProcesses)
 
-	newProcessesList := onlyInNewList          //new processes need no change and can be added directly
-	for _, oldProcess := range onlyInOldList { //any process deleted needs to be marked as $default plan and needs annotations and labels mark to deletion
+	newProcessesList := onlyInNewList          // new processes need no change and can be added directly
+	for _, oldProcess := range onlyInOldList { // any process deleted needs to be marked as $default plan and needs annotations and labels mark to deletion
 		removedProcess := tsuru_client.AppProcess{
 			Name: oldProcess.Name,
 			Plan: "$default",
@@ -105,7 +105,7 @@ func markRemovedProcessAsDefaultPlan(oldProcesses []tsuru_client.AppProcess, new
 		newProcessesList = append(newProcessesList, removedProcess)
 	}
 
-	for _, changedProcess := range inBoth { //for processes changes, we need to check if metadata was changed and properly update or delete them
+	for _, changedProcess := range inBoth { // for processes changes, we need to check if metadata was changed and properly update or delete them
 		processChange := tsuru_client.AppProcess{
 			Name: changedProcess.New.Name,
 			Plan: changedProcess.New.Plan,
@@ -117,7 +117,7 @@ func markRemovedProcessAsDefaultPlan(oldProcesses []tsuru_client.AppProcess, new
 		newProcessesList = append(newProcessesList, processChange)
 	}
 
-	sort.Slice(newProcessesList, func(i, j int) bool { //sort for consistent output
+	sort.Slice(newProcessesList, func(i, j int) bool { // sort for consistent output
 		return newProcessesList[i].Name < newProcessesList[j].Name
 	})
 

@@ -6,12 +6,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -132,8 +132,7 @@ func resourceTsuruTokenCreate(ctx context.Context, d *schema.ResourceData, meta 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		token, _, err := provider.TsuruClient.AuthApi.TeamTokenCreate(ctx, teamToken)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -143,7 +142,6 @@ func resourceTsuruTokenCreate(ctx context.Context, d *schema.ResourceData, meta 
 		d.SetId(token.TokenId)
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -201,8 +199,7 @@ func resourceTsuruTokenUpdate(ctx context.Context, d *schema.ResourceData, meta 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		_, _, err := provider.TsuruClient.AuthApi.TeamTokenUpdate(ctx, tokenId, teamToken)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -211,7 +208,6 @@ func resourceTsuruTokenUpdate(ctx context.Context, d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-
 	if err != nil {
 		return diag.Errorf("unable to update token %s: %v", tokenId, err)
 	}
@@ -226,8 +222,7 @@ func resourceTsuruTokenDelete(ctx context.Context, d *schema.ResourceData, meta 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		_, err := provider.TsuruClient.AuthApi.TeamTokenDelete(ctx, tokenId)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -236,7 +231,6 @@ func resourceTsuruTokenDelete(ctx context.Context, d *schema.ResourceData, meta 
 		}
 		return nil
 	})
-
 	if err != nil {
 		return diag.Errorf("unable to delete token %s: %v", tokenId, err)
 	}

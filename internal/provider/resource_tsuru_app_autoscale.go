@@ -6,6 +6,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -15,8 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
-	"k8s.io/utils/ptr"
 
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
@@ -223,13 +222,12 @@ func resourceTsuruApplicationAutoscaleSet(ctx context.Context, d *schema.Resourc
 	err = resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		_, err = provider.TsuruClient.AppApi.AutoScaleAdd(ctx, app, autoscale)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
 			}
-			return resource.NonRetryableError(errors.Errorf("Unable to create autoscale %s %s: %v", app, process, err))
+			return resource.NonRetryableError(fmt.Errorf("unable to create autoscale %s %s: %v", app, process, err))
 		}
 		return nil
 	})
@@ -265,7 +263,7 @@ func resourceTsuruApplicationAutoscaleRead(ctx context.Context, d *schema.Resour
 		retryCount++
 		autoscales, _, err := provider.TsuruClient.AppApi.AutoScaleInfo(ctx, app)
 		if err != nil {
-			return resource.NonRetryableError(errors.Wrapf(err, "unable to read autoscale %s %s", app, process))
+			return resource.NonRetryableError(fmt.Errorf("unable to read autoscale %s %s: %w", app, process, err))
 		}
 
 		for _, autoscale := range autoscales {
@@ -300,10 +298,8 @@ func resourceTsuruApplicationAutoscaleRead(ctx context.Context, d *schema.Resour
 		log.Print("[INFO] no autoscales found, trying again")
 		return resource.RetryableError(fmt.Errorf("unable to read autoscale for %s::%s: process not found", app, process))
 	})
-
 	if err != nil {
-		var mrErr *MaxRetriesError
-		if errors.As(err, &mrErr) {
+		if mrErr, ok := errors.AsType[*MaxRetriesError](err); ok {
 			d.SetId("")
 			return diag.Diagnostics{
 				{
@@ -328,13 +324,12 @@ func resourceTsuruApplicationAutoscaleDelete(ctx context.Context, d *schema.Reso
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		_, err := provider.TsuruClient.AppApi.AutoScaleRemove(ctx, app, process)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
 			}
-			return resource.NonRetryableError(errors.Errorf("Unable to remove autoscale %s %s: %v", app, process, err))
+			return resource.NonRetryableError(fmt.Errorf("unable to remove autoscale %s %s: %w", app, process, err))
 		}
 		return nil
 	})
@@ -439,17 +434,17 @@ func scaleDownFromResourceData(meta interface{}) tsuru_client.AutoScaleSpecBehav
 		sd := iFace.(map[string]interface{})
 		if v, ok := sd["percentage"]; ok {
 			if val, ok := v.(int); ok {
-				scaleDown.PercentagePolicyValue = ptr.To(int32(val))
+				scaleDown.PercentagePolicyValue = new(int32(val))
 			}
 		}
 		if v, ok := sd["units"]; ok {
 			if val, ok := v.(int); ok {
-				scaleDown.UnitsPolicyValue = ptr.To(int32(val))
+				scaleDown.UnitsPolicyValue = new(int32(val))
 			}
 		}
 		if v, ok := sd["stabilization_window"]; ok {
 			if val, ok := v.(int); ok {
-				scaleDown.StabilizationWindow = ptr.To(int32(val))
+				scaleDown.StabilizationWindow = new(int32(val))
 			}
 		}
 	}

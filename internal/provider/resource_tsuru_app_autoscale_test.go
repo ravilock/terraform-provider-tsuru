@@ -15,7 +15,6 @@ import (
 	echo "github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
-	"k8s.io/utils/ptr"
 )
 
 func TestAccResourceTsuruAppAutoscalePercentage(t *testing.T) {
@@ -42,7 +41,6 @@ func TestAccResourceTsuruAppAutoscalePercentage(t *testing.T) {
 			Provisioner: "kubernetes",
 			Deploys:     2,
 		})
-
 	})
 
 	fakeServer.GET("/1.9/apps/:app/units/autoscale", func(c echo.Context) error {
@@ -137,7 +135,6 @@ func TestAccResourceTsuruAppAutoscaleNumber(t *testing.T) {
 			Provisioner: "kubernetes",
 			Deploys:     2,
 		})
-
 	})
 
 	fakeServer.GET("/1.9/apps/:app/units/autoscale", func(c echo.Context) error {
@@ -229,7 +226,6 @@ func TestAccResourceTsuruAppAutoscaleMilli(t *testing.T) {
 			Provisioner: "kubernetes",
 			Deploys:     2,
 		})
-
 	})
 
 	fakeServer.GET("/1.9/apps/:app/units/autoscale", func(c echo.Context) error {
@@ -321,7 +317,6 @@ func TestAccResourceTsuruAppAutoscaleWithSchedules(t *testing.T) {
 			Provisioner: "kubernetes",
 			Deploys:     2,
 		})
-
 	})
 
 	fakeServer.GET("/1.9/apps/:app/units/autoscale", func(c echo.Context) error {
@@ -441,7 +436,6 @@ func TestAccResourceTsuruAppAutoscaleWithPrometheus(t *testing.T) {
 			Provisioner: "kubernetes",
 			Deploys:     2,
 		})
-
 	})
 
 	fakeServer.GET("/1.9/apps/:app/units/autoscale", func(c echo.Context) error {
@@ -609,7 +603,6 @@ func TestAccResourceTsuruAppAutoscaleWithoutCPU(t *testing.T) {
 			Provisioner: "kubernetes",
 			Deploys:     2,
 		})
-
 	})
 
 	fakeServer.GET("/1.9/apps/:app/units/autoscale", func(c echo.Context) error {
@@ -742,7 +735,6 @@ func TestAccResourceTsuruAppAutoscaleScaleDown(t *testing.T) {
 			Provisioner: "kubernetes",
 			Deploys:     2,
 		})
-
 	})
 
 	fakeServer.GET("/1.9/apps/:app/units/autoscale", func(c echo.Context) error {
@@ -754,9 +746,9 @@ func TestAccResourceTsuruAppAutoscaleScaleDown(t *testing.T) {
 				AverageCPU: "800m",
 				Behavior: tsuru.AutoScaleSpecBehavior{
 					ScaleDown: tsuru.AutoScaleSpecBehaviorScaleDown{
-						StabilizationWindow:   ptr.To(int32(80)),
-						UnitsPolicyValue:      ptr.To(int32(5)),
-						PercentagePolicyValue: ptr.To(int32(15)),
+						StabilizationWindow:   new(int32(80)),
+						UnitsPolicyValue:      new(int32(5)),
+						PercentagePolicyValue: new(int32(15)),
 					},
 				},
 			}})

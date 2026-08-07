@@ -6,12 +6,13 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -355,7 +356,7 @@ func resourceTsuruApplicationUpdate(ctx context.Context, d *schema.ResourceData,
 func validateProcessesOrder(processes []tsuru_client.AppProcess) error {
 	for i := 1; i < len(processes); i++ {
 		if processes[i-1].Name > processes[i].Name {
-			return errors.Errorf("please, sort app processes alphabetically")
+			return errors.New("please, sort app processes alphabetically")
 		}
 	}
 	return nil
@@ -515,7 +516,7 @@ func validPlatform(ctx context.Context, provider *tsuruProvider, platform string
 	}
 	plaformList := strings.Join(availablePlatforms, ",")
 
-	return errors.Errorf("invalid platform: %s available platforms are [%s]", platform, plaformList)
+	return fmt.Errorf("invalid platform: %s available platforms are [%s]", platform, plaformList)
 }
 
 func validPool(ctx context.Context, provider *tsuruProvider, pool string) error {
@@ -533,7 +534,7 @@ func validPool(ctx context.Context, provider *tsuruProvider, pool string) error 
 	}
 	poolList := strings.Join(availablePools, ",")
 
-	return errors.Errorf("invalid pool: %s available pools are [%s]", pool, poolList)
+	return fmt.Errorf("invalid pool: %s available pools are [%s]", pool, poolList)
 }
 
 func validPlan(ctx context.Context, provider *tsuruProvider, plan string) error {
@@ -551,5 +552,5 @@ func validPlan(ctx context.Context, provider *tsuruProvider, plan string) error 
 	}
 	plansList := strings.Join(availablePlans, ",")
 
-	return errors.Errorf("invalid plan: %s available plans are [%s]", plan, plansList)
+	return fmt.Errorf("invalid plan: %s available plans are [%s]", plan, plansList)
 }

@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
-	"k8s.io/utils/ptr"
 )
 
 func TestFluentDown(t *testing.T) {
@@ -21,9 +20,9 @@ func TestFluentDown(t *testing.T) {
 	}{
 		{
 			scaleDownRead: tsuru_client.AutoScaleSpecBehaviorScaleDown{
-				UnitsPolicyValue:      ptr.To(int32(3)),
-				PercentagePolicyValue: ptr.To(int32(10)),
-				StabilizationWindow:   ptr.To(int32(300)),
+				UnitsPolicyValue:      new(int32(3)),
+				PercentagePolicyValue: new(int32(10)),
+				StabilizationWindow:   new(int32(300)),
 			},
 			scaleDownInput: []interface{}{},
 			expected:       nil,
@@ -31,39 +30,22 @@ func TestFluentDown(t *testing.T) {
 
 		{
 			scaleDownRead: tsuru_client.AutoScaleSpecBehaviorScaleDown{
-				UnitsPolicyValue:      ptr.To(int32(3)),
-				PercentagePolicyValue: ptr.To(int32(10)),
-				StabilizationWindow:   ptr.To(int32(300)),
+				UnitsPolicyValue:      new(int32(3)),
+				PercentagePolicyValue: new(int32(10)),
+				StabilizationWindow:   new(int32(300)),
 			},
 			scaleDownInput: []interface{}{
 				map[string]interface{}{"units": 3},
 			},
 			expected: []map[string]interface{}{{
-				"units": ptr.To(int32(3)),
+				"units": new(int32(3)),
 			}},
 		},
 		{
 			scaleDownRead: tsuru_client.AutoScaleSpecBehaviorScaleDown{
-				UnitsPolicyValue:      ptr.To(int32(3)),
-				PercentagePolicyValue: ptr.To(int32(10)),
-				StabilizationWindow:   ptr.To(int32(300)),
-			},
-			scaleDownInput: []interface{}{
-				map[string]interface{}{"units": 3},
-				map[string]interface{}{"stabilization_window": 300},
-				map[string]interface{}{"percentage": 10},
-			},
-			expected: []map[string]interface{}{{
-				"units":                ptr.To(int32(3)),
-				"stabilization_window": ptr.To(int32(300)),
-				"percentage":           ptr.To(int32(10)),
-			}},
-		},
-		{
-			scaleDownRead: tsuru_client.AutoScaleSpecBehaviorScaleDown{
-				UnitsPolicyValue:      ptr.To(int32(21)),
-				PercentagePolicyValue: ptr.To(int32(21)),
-				StabilizationWindow:   ptr.To(int32(21)),
+				UnitsPolicyValue:      new(int32(3)),
+				PercentagePolicyValue: new(int32(10)),
+				StabilizationWindow:   new(int32(300)),
 			},
 			scaleDownInput: []interface{}{
 				map[string]interface{}{"units": 3},
@@ -71,22 +53,39 @@ func TestFluentDown(t *testing.T) {
 				map[string]interface{}{"percentage": 10},
 			},
 			expected: []map[string]interface{}{{
-				"units":                ptr.To(int32(21)),
-				"stabilization_window": ptr.To(int32(21)),
-				"percentage":           ptr.To(int32(21)),
+				"units":                new(int32(3)),
+				"stabilization_window": new(int32(300)),
+				"percentage":           new(int32(10)),
 			}},
 		},
 		{
 			scaleDownRead: tsuru_client.AutoScaleSpecBehaviorScaleDown{
-				UnitsPolicyValue:      ptr.To(int32(21)),
-				PercentagePolicyValue: ptr.To(int32(21)),
-				StabilizationWindow:   ptr.To(int32(21)),
+				UnitsPolicyValue:      new(int32(21)),
+				PercentagePolicyValue: new(int32(21)),
+				StabilizationWindow:   new(int32(21)),
+			},
+			scaleDownInput: []interface{}{
+				map[string]interface{}{"units": 3},
+				map[string]interface{}{"stabilization_window": 300},
+				map[string]interface{}{"percentage": 10},
+			},
+			expected: []map[string]interface{}{{
+				"units":                new(int32(21)),
+				"stabilization_window": new(int32(21)),
+				"percentage":           new(int32(21)),
+			}},
+		},
+		{
+			scaleDownRead: tsuru_client.AutoScaleSpecBehaviorScaleDown{
+				UnitsPolicyValue:      new(int32(21)),
+				PercentagePolicyValue: new(int32(21)),
+				StabilizationWindow:   new(int32(21)),
 			},
 			scaleDownInput: []interface{}{},
 			expected: []map[string]interface{}{{
-				"units":                ptr.To(int32(21)),
-				"stabilization_window": ptr.To(int32(21)),
-				"percentage":           ptr.To(int32(21)),
+				"units":                new(int32(21)),
+				"stabilization_window": new(int32(21)),
+				"percentage":           new(int32(21)),
 			}},
 		},
 	}
