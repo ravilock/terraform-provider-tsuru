@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"regexp"
 	"testing"
 
@@ -55,7 +54,8 @@ func TestAccResourceTsuruJobDeploy(t *testing.T) {
 		t.Errorf("methods=%s, path=%s, err=%s", c.Request().Method, c.Path(), err.Error())
 	}
 	server := httptest.NewServer(fakeServer)
-	os.Setenv("TSURU_TARGET", server.URL)
+	t.Setenv("TSURU_TARGET", server.URL)
+	t.Setenv("TSURU_TOKEN", "testing-token")
 
 	resourceName := "tsuru_job_deploy.deploy"
 	resource.Test(t, resource.TestCase{
@@ -109,7 +109,8 @@ func TestAccResourceTsuruJobDeployFailed(t *testing.T) {
 		t.Errorf("methods=%s, path=%s, err=%s", c.Request().Method, c.Path(), err.Error())
 	}
 	server := httptest.NewServer(fakeServer)
-	os.Setenv("TSURU_TARGET", server.URL)
+	t.Setenv("TSURU_TARGET", server.URL)
+	t.Setenv("TSURU_TOKEN", "testing-token")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

@@ -5,15 +5,16 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	echo "github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -61,8 +62,8 @@ func TestAccResourceTsuruAppDeploy(t *testing.T) {
 		t.Errorf("methods=%s, path=%s, err=%s", c.Request().Method, c.Path(), err.Error())
 	}
 	server := httptest.NewServer(fakeServer)
-	os.Setenv("TSURU_TARGET", server.URL)
-	os.Setenv("TSURU_TOKEN", "testing-token")
+	t.Setenv("TSURU_TARGET", server.URL)
+	t.Setenv("TSURU_TOKEN", "testing-token")
 
 	resourceName := "tsuru_app_deploy.deploy"
 	resource.Test(t, resource.TestCase{
@@ -121,8 +122,8 @@ func TestAccResourceTsuruAppDeployFailed(t *testing.T) {
 		t.Errorf("methods=%s, path=%s, err=%s", c.Request().Method, c.Path(), err.Error())
 	}
 	server := httptest.NewServer(fakeServer)
-	os.Setenv("TSURU_TARGET", server.URL)
-	os.Setenv("TSURU_TOKEN", "testing-token")
+	t.Setenv("TSURU_TARGET", server.URL)
+	t.Setenv("TSURU_TOKEN", "testing-token")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -135,6 +136,21 @@ func TestAccResourceTsuruAppDeployFailed(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestResourceTsuruAppDeployWithoutToken(t *testing.T) {
+	resource := resourceTsuruApplicationDeploy()
+	data := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{
+		"app":   "app01",
+		"image": "myrepo/app01:0.1.0",
+	})
+
+	diagnostics := resourceTsuruApplicationDeployDo(context.Background(), data, &tsuruProvider{
+		Host: "http://example.com",
+	})
+
+	assert.Len(t, diagnostics, 1)
+	assert.Equal(t, "token not available", diagnostics[0].Summary)
 }
 
 func testAccResourceTsuruAppDeploy_basic(serverURL string) string {

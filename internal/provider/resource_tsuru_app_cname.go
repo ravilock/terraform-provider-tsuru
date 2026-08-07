@@ -6,12 +6,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -69,7 +69,6 @@ func resourceTsuruApplicationCNameCreate(ctx context.Context, d *schema.Resource
 		d.SetId(createID([]string{app, hostname}))
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -128,7 +127,6 @@ func resourceTsuruApplicationCNameDelete(ctx context.Context, d *schema.Resource
 
 		return nil
 	})
-
 	if err != nil {
 		return diag.Errorf("unable to delete cname: %v", err)
 	}
