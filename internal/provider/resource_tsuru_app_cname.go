@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
+	"errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -58,8 +58,7 @@ func resourceTsuruApplicationCNameCreate(ctx context.Context, d *schema.Resource
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		_, err := provider.TsuruClient.AppApi.AppCnameAdd(ctx, app, cname)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -119,8 +118,7 @@ func resourceTsuruApplicationCNameDelete(ctx context.Context, d *schema.Resource
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		_, err := provider.TsuruClient.AppApi.AppCnameDelete(ctx, app, cname)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}

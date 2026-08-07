@@ -6,6 +6,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
@@ -103,8 +103,7 @@ func resourceTsuruServiceInstanceBindCreate(ctx context.Context, d *schema.Resou
 			resp, err = provider.TsuruClient.ServiceApi.JobServiceInstanceBind(ctx, service, instance, jobName, tsuru_client.JobServiceInstanceBind{})
 		}
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -115,7 +114,6 @@ func resourceTsuruServiceInstanceBindCreate(ctx context.Context, d *schema.Resou
 		logTsuruStream(resp.Body)
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -205,8 +203,7 @@ func resourceTsuruServiceInstanceBindDelete(ctx context.Context, d *schema.Resou
 			_, err = provider.TsuruClient.ServiceApi.JobServiceInstanceUnbind(ctx, service, instance, jobName, tsuru_client.JobServiceInstanceUnbind{})
 		}
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -215,7 +212,6 @@ func resourceTsuruServiceInstanceBindDelete(ctx context.Context, d *schema.Resou
 		}
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}

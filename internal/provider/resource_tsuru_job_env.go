@@ -6,12 +6,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
@@ -69,12 +69,11 @@ func resourceTsuruJobEnvironmentCreate(ctx context.Context, d *schema.ResourceDa
 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		if len(envs.Envs) == 0 {
-			return resource.NonRetryableError(errors.Errorf("No environment variables to create"))
+			return resource.NonRetryableError(errors.New("no environment variables to create"))
 		}
 		resp, err := provider.TsuruClient.JobApi.JobEnvSet(ctx, job, *envs)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -147,8 +146,7 @@ func resourceTsuruJobEnvironmentUpdate(ctx context.Context, d *schema.ResourceDa
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		_, err := provider.TsuruClient.JobApi.JobEnvSet(ctx, job, *envs)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -176,8 +174,7 @@ func resourceTsuruJobEnvironmentDelete(ctx context.Context, d *schema.ResourceDa
 			PruneUnused: true,
 		})
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}

@@ -6,12 +6,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
@@ -145,8 +145,7 @@ func resourceTsuruJobCreate(ctx context.Context, d *schema.ResourceData, meta in
 	err = resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		_, err = provider.TsuruClient.JobApi.CreateJob(ctx, job)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -192,8 +191,7 @@ func resourceTsuruJobUpdate(ctx context.Context, d *schema.ResourceData, meta in
 	err = resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		resp, err := provider.TsuruClient.JobApi.UpdateJob(ctx, jobName, job)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -261,8 +259,7 @@ func resourceTsuruJobDelete(ctx context.Context, d *schema.ResourceData, meta in
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		_, err := provider.TsuruClient.JobApi.DeleteJob(ctx, name)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}

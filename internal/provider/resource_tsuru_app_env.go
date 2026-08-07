@@ -6,12 +6,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 
 	"github.com/tsuru/go-tsuruclient/pkg/tsuru"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
@@ -86,12 +86,11 @@ func resourceTsuruApplicationEnvironmentCreate(ctx context.Context, d *schema.Re
 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		if len(envs.Envs) == 0 {
-			return resource.NonRetryableError(errors.Errorf("No environment variables to create"))
+			return resource.NonRetryableError(errors.New("no environment variables to create"))
 		}
 		resp, err := provider.TsuruClient.AppApi.EnvSet(ctx, app, *envs)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -125,7 +124,7 @@ func resourceTsuruApplicationEnvironmentRead(ctx context.Context, d *schema.Reso
 		}
 		return diag.Errorf("unable to read envs for app %s: %v", app, err)
 	}
-	
+
 	envs = filterUnmanagedTerraformEnvs(envs, provider.FullManagementEnvs)
 
 	envVars := map[string]string{}
@@ -164,12 +163,11 @@ func resourceTsuruApplicationEnvironmentUpdate(ctx context.Context, d *schema.Re
 
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		if len(envs.Envs) == 0 {
-			return resource.NonRetryableError(errors.Errorf("No environment variables to update"))
+			return resource.NonRetryableError(errors.New("no environment variables to update"))
 		}
 		_, err := provider.TsuruClient.AppApi.EnvSet(ctx, app, *envs)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -203,8 +201,7 @@ func resourceTsuruApplicationEnvironmentDelete(ctx context.Context, d *schema.Re
 			Norestart: noRestart,
 		})
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -240,14 +237,14 @@ func envsFromResource(envvars interface{}, private bool) []tsuru_client.Env {
 func filterUnmanagedTerraformEnvs(envs []tsuru.EnvVar, fullManagementEnvs bool) []tsuru.EnvVar {
 	n := 0
 	for _, env := range envs {
-		if isReservedEnv(env.Name) { //reserved Envs, skip
+		if isReservedEnv(env.Name) { // reserved Envs, skip
 			continue
 		}
 
 		if env.ManagedBy == "terraform" || (fullManagementEnvs && env.ManagedBy == "") {
 			envs[n] = env
 			n++
-		} 
+		}
 	}
 
 	envs = envs[:n]

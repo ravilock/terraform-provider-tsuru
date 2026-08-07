@@ -6,13 +6,14 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -95,17 +96,15 @@ func resourceTsuruApplicationUnitsCreate(ctx context.Context, d *schema.Resource
 		err = resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			_, err = provider.TsuruClient.AppApi.UnitsAdd(ctx, app, deltaRequest)
 			if err != nil {
-				var apiError tsuru_client.GenericOpenAPIError
-				if errors.As(err, &apiError) {
+				if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 					if isRetryableError(apiError.Body()) {
 						return resource.RetryableError(err)
 					}
 				}
-				return resource.NonRetryableError(errors.Errorf("unable to add units to %s %s: %v", app, process, err))
+				return resource.NonRetryableError(fmt.Errorf("unable to add units to %s %s: %w", app, process, err))
 			}
 			return nil
 		})
-
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -228,7 +227,7 @@ func countUnits(ctx context.Context, provider *tsuruProvider, appName, process s
 		if isNotFoundError(err) {
 			return 0, nil
 		}
-		return 0, errors.Errorf("unable to read app %s: %v", app.Name, err)
+		return 0, fmt.Errorf("unable to read app %s: %w", app.Name, err)
 	}
 
 	units := 0

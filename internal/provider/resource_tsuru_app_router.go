@@ -6,13 +6,14 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/pkg/errors"
 	tsuru_client "github.com/tsuru/go-tsuruclient/pkg/tsuru"
 )
 
@@ -76,18 +77,16 @@ func resourceTsuruApplicationRouterCreate(ctx context.Context, d *schema.Resourc
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		_, err := provider.TsuruClient.AppApi.AppRouterAdd(ctx, appName, router)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
-				return resource.NonRetryableError(errors.Errorf("unable to create router: %v", err))
+				return resource.NonRetryableError(fmt.Errorf("unable to create router: %w", err))
 			}
 		}
 		d.SetId(createID([]string{appName, name}))
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -153,8 +152,7 @@ func resourceTsuruApplicationRouterUpdate(ctx context.Context, d *schema.Resourc
 	err := resource.RetryContext(ctx, d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 		_, err := provider.TsuruClient.AppApi.AppRouterUpdate(ctx, appName, name, router)
 		if err != nil {
-			var apiError tsuru_client.GenericOpenAPIError
-			if errors.As(err, &apiError) {
+			if apiError, ok := errors.AsType[tsuru_client.GenericOpenAPIError](err); ok {
 				if isRetryableError(apiError.Body()) {
 					return resource.RetryableError(err)
 				}
@@ -163,7 +161,6 @@ func resourceTsuruApplicationRouterUpdate(ctx context.Context, d *schema.Resourc
 		}
 		return nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -199,5 +196,5 @@ func validRouter(ctx context.Context, provider *tsuruProvider, router string) er
 			return nil
 		}
 	}
-	return errors.Errorf("invalid router: %s", router)
+	return fmt.Errorf("invalid router: %s", router)
 }

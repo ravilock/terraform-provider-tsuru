@@ -1,6 +1,6 @@
 module github.com/tsuru/terraform-provider-tsuru
 
-go 1.21
+go 1.26.0
 
 require (
 	github.com/antihax/optional v1.0.0
@@ -8,7 +8,6 @@ require (
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.26.1
 	github.com/labstack/echo/v4 v4.9.1
-	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tsuru/go-tsuruclient v0.6.0
 	github.com/tsuru/tsuru-client v0.0.0-20240325204824-8c0dc602a5be
@@ -53,6 +52,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect
 	github.com/tsuru/gnuflag v0.0.0-20151217162021-86b8c1b864aa // indirect
