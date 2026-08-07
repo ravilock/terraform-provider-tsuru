@@ -212,8 +212,6 @@ github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6 h1:1XDdWFAjIbCSG1Oj
 github.com/tsuru/tablecli v0.0.0-20190131152944-7ded8a3383c6/go.mod h1:ztYpOhW+u1k21FEqp7nZNgpWbr0dUKok5lgGCZi+1AQ=
 github.com/tsuru/tsuru v0.0.0-20240325190920-410c71393b77 h1:cuWFjNLaemdQZhojqJbb/rOXO97tlcPeLAHg/x+EQGk=
 github.com/tsuru/tsuru v0.0.0-20240325190920-410c71393b77/go.mod h1:QxMVXEjpb6mPnlaLMQdxJ3XCg+vOa4/MwZWLk3/naec=
-github.com/tsuru/tsuru-client v0.0.0-20240325204824-8c0dc602a5be h1:+HhqI11Vh9gzop8fCObu+Wn1fuWEJNU7j/highX1Ijs=
-github.com/tsuru/tsuru-client v0.0.0-20240325204824-8c0dc602a5be/go.mod h1:G0TI7xjbZje008KkWsWkZO/csT4W5a/aXohm0UKrL50=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasttemplate v1.2.1/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=

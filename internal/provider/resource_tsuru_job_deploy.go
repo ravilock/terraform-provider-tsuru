@@ -89,7 +89,7 @@ func resourceTsuruJobDeployDo(ctx context.Context, d *schema.ResourceData, meta 
 
 	token := provider.Token
 	if token == "" {
-		token = deployToken()
+		return diag.Errorf("token not available")
 	}
 	req.Header.Set("Authorization", token)
 
