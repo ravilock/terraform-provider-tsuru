@@ -151,24 +151,30 @@ func resourceTsuruServiceInstanceBindRead(ctx context.Context, d *schema.Resourc
 		return diag.Errorf("unable to read bind %s %s: %v", service, instanceName, err)
 	}
 
-	for _, a := range instance.Apps {
-		if name == a {
-			d.Set("app", a)
-			d.Set("service_name", service)
-			d.Set("service_instance", instanceName)
-			return nil
+	isJob := len(parts) == 4 && parts[2] == "tsuru-job"
+	if !isJob {
+		for _, a := range instance.Apps {
+			if name == a {
+				d.Set("app", a)
+				d.Set("job", nil)
+				d.Set("service_name", service)
+				d.Set("service_instance", instanceName)
+				return nil
+			}
 		}
-	}
 
-	for _, j := range instance.Jobs {
-		if name == j {
-			d.Set("job", j)
-			d.Set("service_name", service)
-			d.Set("service_instance", instanceName)
-			return nil
+	} else {
+		for _, j := range instance.Jobs {
+			if name == j {
+				d.Set("job", j)
+				d.Set("app", nil)
+				d.Set("service_name", service)
+				d.Set("service_instance", instanceName)
+				return nil
+			}
 		}
-	}
 
+	}
 	d.SetId("")
 	return nil
 }
